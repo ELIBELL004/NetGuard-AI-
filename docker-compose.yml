@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: netguard_backend
+    env_file: backend/.env           # copy .env.example → .env and fill in values
+    environment:
+      - DEV_MODE=${DEV_MODE:-true}
+      - NETWORK_INTERFACE=${NETWORK_INTERFACE:-eth0}
+      - PACKET_COUNT=${PACKET_COUNT:-100}
+    # Required for real packet capture — remove in DEV_MODE
+    # cap_add:
+    #   - NET_ADMIN
+    #   - NET_RAW
+    # network_mode: host
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: netguard_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
